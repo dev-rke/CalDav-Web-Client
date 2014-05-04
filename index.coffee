@@ -8,6 +8,7 @@ class Calendar
         center: 'title'
         right: 'month,agendaWeek,agendaDay'
       timeFormat: 'HH:mm{ - HH:mm}\n'
+      ignoreTimezone: false
     @calendar.fullCalendar 'addEventSource', (viewStartDate, viewEndDate)=>
       @caldav.get(@addCalendarEntry, @convertDateToIcalTime(viewStartDate), @convertDateToIcalTime(viewEndDate))
 
@@ -31,14 +32,11 @@ class Calendar
     day = matches.slice(0, 3).join('-')
     time = matches.slice(3,6).join(':')
     time = '' if time is '::'
-    gmt = matches.slice(6) is [undefined] ? '' : matches.slice(6)
+    gmt = if matches.slice(6) is [undefined] then 'Z' else matches.slice(6)
     datetime = day
     datetime += "T" + time if time
     datetime += gmt if gmt
-    date = new Date(datetime)
-    # correct timezone while date parsing
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
-    return date
+    datetime
 
   convertDateToIcalTime: (date) =>
     date.toISOString().replace(/-|:|\.\d{3}/gi, '')

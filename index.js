@@ -19,7 +19,8 @@
           center: 'title',
           right: 'month,agendaWeek,agendaDay'
         },
-        timeFormat: 'HH:mm{ - HH:mm}\n'
+        timeFormat: 'HH:mm{ - HH:mm}\n',
+        ignoreTimezone: false
       });
       this.calendar.fullCalendar('addEventSource', function(viewStartDate, viewEndDate) {
         return _this.caldav.get(_this.addCalendarEntry, _this.convertDateToIcalTime(viewStartDate), _this.convertDateToIcalTime(viewEndDate));
@@ -46,7 +47,7 @@
     };
 
     Calendar.prototype.convertICalTimeToISOTime = function(time) {
-      var date, datetime, day, gmt, matches, _ref;
+      var datetime, day, gmt, matches;
       matches = time.match(/(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?(Z?)/i);
       matches.shift();
       day = matches.slice(0, 3).join('-');
@@ -54,9 +55,7 @@
       if (time === '::') {
         time = '';
       }
-      gmt = (_ref = matches.slice(6) === [void 0]) != null ? _ref : {
-        '': matches.slice(6)
-      };
+      gmt = matches.slice(6) === [void 0] ? 'Z' : matches.slice(6);
       datetime = day;
       if (time) {
         datetime += "T" + time;
@@ -64,9 +63,7 @@
       if (gmt) {
         datetime += gmt;
       }
-      date = new Date(datetime);
-      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-      return date;
+      return datetime;
     };
 
     Calendar.prototype.convertDateToIcalTime = function(date) {
