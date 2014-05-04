@@ -9,8 +9,10 @@ class Calendar
         right: 'month,agendaWeek,agendaDay'
       timeFormat: 'HH:mm{ - HH:mm}\n'
       ignoreTimezone: false
-    @calendar.fullCalendar 'addEventSource', (viewStartDate, viewEndDate)=>
-      @caldav.get(@addCalendarEntry, @convertDateToIcalTime(viewStartDate), @convertDateToIcalTime(viewEndDate))
+      events: (viewStartDate, viewEndDate, callback) =>
+        @caldav.get @convertDateToIcalTime(viewStartDate), @convertDateToIcalTime(viewEndDate), (calDavEntry) =>
+          @addCalendarEntry(calDavEntry)
+          callback()
 
   addCalendarEntry: (calDavEntry) =>
     if calDavEntry?.VEVENT?
@@ -24,6 +26,7 @@ class Calendar
       if end
         event.end = end
         event.allDay = false
+      # TODO: remove renderEvent and render it in the fullCalendar constructor via callback
       @calendar.fullCalendar('renderEvent', event)
 
   convertICalTimeToISOTime: (time) =>
@@ -46,7 +49,8 @@ class Calendar
 class CalDav
   constructor: (@url, @user, @password) ->
 
-  get: (callback, datestart, dateend) =>
+    # TODO: this method should be moved to calendar...the caldav class should be used only to parse caldav data
+  get: (datestart, dateend, callback) =>
     jQuery.ajax
       url: @url
       method: "REPORT"

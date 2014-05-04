@@ -20,10 +20,13 @@
           right: 'month,agendaWeek,agendaDay'
         },
         timeFormat: 'HH:mm{ - HH:mm}\n',
-        ignoreTimezone: false
-      });
-      this.calendar.fullCalendar('addEventSource', function(viewStartDate, viewEndDate) {
-        return _this.caldav.get(_this.addCalendarEntry, _this.convertDateToIcalTime(viewStartDate), _this.convertDateToIcalTime(viewEndDate));
+        ignoreTimezone: false,
+        events: function(viewStartDate, viewEndDate, callback) {
+          return _this.caldav.get(_this.convertDateToIcalTime(viewStartDate), _this.convertDateToIcalTime(viewEndDate), function(calDavEntry) {
+            _this.addCalendarEntry(calDavEntry);
+            return callback();
+          });
+        }
       });
     }
 
@@ -82,7 +85,7 @@
       this.get = __bind(this.get, this);
     }
 
-    CalDav.prototype.get = function(callback, datestart, dateend) {
+    CalDav.prototype.get = function(datestart, dateend, callback) {
       var _this = this;
       return jQuery.ajax({
         url: this.url,
