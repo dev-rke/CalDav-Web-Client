@@ -52,7 +52,7 @@
         time = '';
       }
       gmt = (_ref = matches.slice(6) === [void 0]) != null ? _ref : {
-        '': matches.slice(6)
+        'Z': matches.slice(6)
       };
       datetime = day;
       if (time) {
@@ -109,7 +109,6 @@
       lines = calendarString.split('\r\n');
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
-        console.log(line);
         entry = line.split(':');
         label = entry.shift().split(';')[0];
         value = entry.join(':');

@@ -29,7 +29,7 @@ class Calendar
     day = matches.slice(0, 3).join('-')
     time = matches.slice(3,6).join(':')
     time = '' if time is '::'
-    gmt = matches.slice(6) is [undefined] ? '' : matches.slice(6)
+    gmt = matches.slice(6) is [undefined] ? 'Z' : matches.slice(6)
     datetime = day
     datetime += "T" + time if time
     datetime += gmt if gmt
@@ -85,7 +85,6 @@ class CalDav
     subElementName = ""
     lines = calendarString.split '\r\n'
     for line in lines
-      console.log line
       entry = line.split ':'
       label = entry.shift().split(';')[0]
       value = entry.join(':')
