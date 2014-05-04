@@ -1,12 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Test</title>
+    <title>CalDav Web Client</title>
     <link type="text/css" href="fullcalendar.css" rel="stylesheet" />
+    <link type="text/css" href="style.css" rel="stylesheet" />
 </head>
 <body>
-    <div id="calendar">
+    <div id="changecredentials">Change Credentials</div>
+    <div id="login">
+        <h1>CalDav Web Client</h1>
 
+        <label for="url">Url:</label><input type="text" id="url" /><br />
+        <label for="user">User:</label><input type="text" id="user" /><br />
+        <label for="password">Password:</label><input type="password" id="password" /><br />
+    </div>
+
+    <div id="calendar" class="hidden">
     </div>
 
     <script type="text/javascript" src="jquery.min.js"></script>

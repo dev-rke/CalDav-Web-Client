@@ -1,3 +1,20 @@
+class DateUtility
+  @convertICalTimeToISOTime: (time) =>
+    matches = time.match(/(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?(Z?)/i)
+    matches.shift()
+    day = matches.slice(0, 3).join('-')
+    time = matches.slice(3,6).join(':')
+    time = '' if time is '::'
+    gmt = if matches.slice(6) is [undefined] then 'Z' else matches.slice(6)
+    datetime = day
+    datetime += "T" + time if time
+    datetime += gmt if gmt
+    datetime
+
+  @convertDateToIcalTime: (date) =>
+    date.toISOString().replace(/-|:|\.\d{3}/gi, '')
+
+
 class Calendar
   constructor: (@caldav) ->
     @calendar = jQuery('#calendar')
@@ -10,18 +27,20 @@ class Calendar
       timeFormat: 'HH:mm{ - HH:mm}\n'
       ignoreTimezone: false
       events: (viewStartDate, viewEndDate, callback) =>
-        @caldav.get @convertDateToIcalTime(viewStartDate), @convertDateToIcalTime(viewEndDate), (calDavEntry) =>
+        startDate = DateUtility.convertDateToIcalTime(viewStartDate)
+        endDate = DateUtility.convertDateToIcalTime(viewEndDate)
+        @caldav.get startDate, endDate, (calDavEntry) =>
           @addCalendarEntry(calDavEntry)
           callback()
 
   addCalendarEntry: (calDavEntry) =>
     if calDavEntry?.VEVENT?
       if calDavEntry.VEVENT.DTEND
-        end = @convertICalTimeToISOTime(calDavEntry.VEVENT.DTEND)
+        end = DateUtility.convertICalTimeToISOTime(calDavEntry.VEVENT.DTEND)
       event = {
         id: calDavEntry.VEVENT.UID
         title: calDavEntry.VEVENT.SUMMARY
-        start: @convertICalTimeToISOTime(calDavEntry.VEVENT.DTSTART)
+        start: DateUtility.convertICalTimeToISOTime(calDavEntry.VEVENT.DTSTART)
       }
       if end
         event.end = end
@@ -29,30 +48,15 @@ class Calendar
       # TODO: remove renderEvent and render it in the fullCalendar constructor via callback
       @calendar.fullCalendar('renderEvent', event)
 
-  convertICalTimeToISOTime: (time) =>
-    matches = time.match(/(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?(Z?)/i)
-    matches.shift()
-    day = matches.slice(0, 3).join('-')
-    time = matches.slice(3,6).join(':')
-    time = '' if time is '::'
-    gmt = if matches.slice(6) is [undefined] then 'Z' else matches.slice(6)
-    datetime = day
-    datetime += "T" + time if time
-    datetime += gmt if gmt
-    datetime
-
-  convertDateToIcalTime: (date) =>
-    date.toISOString().replace(/-|:|\.\d{3}/gi, '')
-
 
 
 class CalDav
-  constructor: (@url, @user, @password) ->
+  constructor: (@userData) ->
 
     # TODO: this method should be moved to calendar...the caldav class should be used only to parse caldav data
   get: (datestart, dateend, callback) =>
     jQuery.ajax
-      url: @url
+      url: @userData.url
       method: "REPORT"
       data:  """
               <?xml version="1.0" encoding="utf-8" ?>
@@ -75,16 +79,22 @@ class CalDav
       headers:
         "Depth": "1"
         "Content-Type": "application/xml"
-      username: @user
-      password: @password
+      username: @userData.user
+      password: @userData.password
       dataType: "xml"
       success: (xmlData) =>
         # fixing silly bug between chrome and firefox:
         # chrome does not accept cal\\:calendar-data due to the namespace prefix, while firefox does not accept
         # the string without the namespace. so we just filter for both variants
         # https://stackoverflow.com/questions/10181087/xml-findsomeelement-pulling-values-with-jquery-from-xml-with-namespace
-        $(xmlData).find("cal\\:calendar-data, calendar-data").each (index, data) =>
+        foundElements = $(xmlData).find("cal\\:calendar-data, calendar-data")
+        if foundElements.size() is 0
+          if $(xmlData).find("d\\:multistatus, multistatus").size() > 0
+            callback(true)
+        foundElements.each (index, data) =>
           callback(@parseCalDav($(data).text()))
+      error: =>
+        callback(false)
 
   parseCalDav: (calendarString) ->
     CalDavEntry = {}
@@ -103,7 +113,6 @@ class CalDav
       if label is 'END'
         isSubElement = false
         continue
-
       if isSubElement
         CalDavEntry[subElementName][label] = value
       else
@@ -111,11 +120,60 @@ class CalDav
     CalDavEntry
 
 
+class UserData
+  constructor: ->
+    @localstorage = window.localStorage
+    @prefix = "caldav.webclient."
+
+  fetchDataFromForm: =>
+    @url = jQuery('#url').val()
+    @user = jQuery('#user').val()
+    @password = jQuery('#password').val()
+
+  setDataToForm: =>
+    jQuery('#url').val(@url)
+    jQuery('#user').val(@user)
+    jQuery('#password').val(@password)
+
+  loadDataFromLocalStorage: =>
+    @url = @localstorage.getItem @prefix + "url"
+    @user = @localstorage.getItem @prefix + "user"
+    @password = @localstorage.getItem @prefix + "password"
+    true if @url
+
+  saveDataToLocalStorage: =>
+    @localstorage.setItem @prefix + "url", @url
+    @localstorage.setItem @prefix + "user", @user
+    @localstorage.setItem @prefix + "password", @password
+
 
 jQuery =>
+  userdata = new UserData()
+  caldav = new CalDav(userdata)
+  calendar = null
 
-  caldav = new CalDav("/baikal/cal.php/calendars/Reiner/default/", "User", "Password")
-  calendar = new Calendar(caldav)
+  if userdata.loadDataFromLocalStorage()
+    jQuery('#calendar, #login').toggleClass 'hidden'
+    calendar = new Calendar(caldav) if not calendar
+
+  jQuery('#url, #user, #password').on 'keydown', (event) =>
+    if event.keyCode is 13
+      userdata.fetchDataFromForm()
+      today = DateUtility.convertDateToIcalTime(new Date())
+      tomorrowDate = new Date()
+      tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+      tomorrow = DateUtility.convertDateToIcalTime(tomorrowDate)
+      caldav.get today, tomorrow, (data) =>
+        if data
+          userdata.saveDataToLocalStorage()
+          jQuery('#calendar, #login').toggleClass 'hidden'
+          calendar = new Calendar(caldav) if not calendar
+        else
+          $('#login input').addClass 'error'
+
+  jQuery('#changecredentials').on 'click', =>
+    jQuery('#calendar, #login').toggleClass 'hidden'
+    userdata.setDataToForm()
 
 
 ###
