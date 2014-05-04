@@ -2,12 +2,12 @@ class Calendar
   constructor: (@caldav) ->
     @calendar = jQuery('#calendar')
     @calendar.fullCalendar
-      agenda: 'h:mm{ - h:mm}'
       firstDay: 1
       header:
         left: 'prev,next today'
         center: 'title'
         right: 'month,agendaWeek,agendaDay'
+      timeFormat: 'HH:mm{ - HH:mm}\n'
     @calendar.fullCalendar 'addEventSource', (viewStartDate, viewEndDate)=>
       @caldav.get(@addCalendarEntry, @convertDateToIcalTime(viewStartDate), @convertDateToIcalTime(viewEndDate))
 
@@ -19,8 +19,10 @@ class Calendar
         id: calDavEntry.VEVENT.UID
         title: calDavEntry.VEVENT.SUMMARY
         start: @convertICalTimeToISOTime(calDavEntry.VEVENT.DTSTART)
-        end: end
       }
+      if end
+        event.end = end
+        event.allDay = false
       @calendar.fullCalendar('renderEvent', event)
 
   convertICalTimeToISOTime: (time) =>
@@ -29,11 +31,14 @@ class Calendar
     day = matches.slice(0, 3).join('-')
     time = matches.slice(3,6).join(':')
     time = '' if time is '::'
-    gmt = matches.slice(6) is [undefined] ? 'Z' : matches.slice(6)
+    gmt = matches.slice(6) is [undefined] ? '' : matches.slice(6)
     datetime = day
     datetime += "T" + time if time
     datetime += gmt if gmt
-    datetime.toString()
+    date = new Date(datetime)
+    # correct timezone while date parsing
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+    return date
 
   convertDateToIcalTime: (date) =>
     date.toISOString().replace(/-|:|\.\d{3}/gi, '')

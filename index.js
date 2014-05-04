@@ -13,13 +13,13 @@
       this.addCalendarEntry = __bind(this.addCalendarEntry, this);
       this.calendar = jQuery('#calendar');
       this.calendar.fullCalendar({
-        agenda: 'h:mm{ - h:mm}',
         firstDay: 1,
         header: {
           left: 'prev,next today',
           center: 'title',
           right: 'month,agendaWeek,agendaDay'
-        }
+        },
+        timeFormat: 'HH:mm{ - HH:mm}\n'
       });
       this.calendar.fullCalendar('addEventSource', function(viewStartDate, viewEndDate) {
         return _this.caldav.get(_this.addCalendarEntry, _this.convertDateToIcalTime(viewStartDate), _this.convertDateToIcalTime(viewEndDate));
@@ -35,15 +35,18 @@
         event = {
           id: calDavEntry.VEVENT.UID,
           title: calDavEntry.VEVENT.SUMMARY,
-          start: this.convertICalTimeToISOTime(calDavEntry.VEVENT.DTSTART),
-          end: end
+          start: this.convertICalTimeToISOTime(calDavEntry.VEVENT.DTSTART)
         };
+        if (end) {
+          event.end = end;
+          event.allDay = false;
+        }
         return this.calendar.fullCalendar('renderEvent', event);
       }
     };
 
     Calendar.prototype.convertICalTimeToISOTime = function(time) {
-      var datetime, day, gmt, matches, _ref;
+      var date, datetime, day, gmt, matches, _ref;
       matches = time.match(/(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?(Z?)/i);
       matches.shift();
       day = matches.slice(0, 3).join('-');
@@ -52,7 +55,7 @@
         time = '';
       }
       gmt = (_ref = matches.slice(6) === [void 0]) != null ? _ref : {
-        'Z': matches.slice(6)
+        '': matches.slice(6)
       };
       datetime = day;
       if (time) {
@@ -61,7 +64,9 @@
       if (gmt) {
         datetime += gmt;
       }
-      return datetime.toString();
+      date = new Date(datetime);
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      return date;
     };
 
     Calendar.prototype.convertDateToIcalTime = function(date) {
