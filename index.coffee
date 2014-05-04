@@ -26,6 +26,7 @@ class Calendar
         right: 'month,agendaWeek,agendaDay'
       timeFormat: 'HH:mm{ - HH:mm}\n'
       ignoreTimezone: false
+      contentHeight: jQuery(window).height() - 250
       events: (viewStartDate, viewEndDate, callback) =>
         startDate = DateUtility.convertDateToIcalTime(viewStartDate)
         endDate = DateUtility.convertDateToIcalTime(viewEndDate)
@@ -168,6 +169,7 @@ jQuery =>
           userdata.saveDataToLocalStorage()
           jQuery('#calendar, #login').toggleClass 'hidden'
           calendar = new Calendar(caldav) if not calendar
+          $('#login input').removeClass 'error'
         else
           $('#login input').addClass 'error'
 

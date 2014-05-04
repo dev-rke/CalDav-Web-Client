@@ -50,6 +50,7 @@
         },
         timeFormat: 'HH:mm{ - HH:mm}\n',
         ignoreTimezone: false,
+        contentHeight: jQuery(window).height() - 250,
         events: function(viewStartDate, viewEndDate, callback) {
           var endDate, startDate;
           startDate = DateUtility.convertDateToIcalTime(viewStartDate);
@@ -221,8 +222,9 @@
             userdata.saveDataToLocalStorage();
             jQuery('#calendar, #login').toggleClass('hidden');
             if (!calendar) {
-              return calendar = new Calendar(caldav);
+              calendar = new Calendar(caldav);
             }
+            return $('#login input').removeClass('error');
           } else {
             return $('#login input').addClass('error');
           }
