@@ -21,8 +21,8 @@ CalDav Web Client is an open source web client to view calendar entries of CalDa
  * display calendar entries
 
 ### Compatibility
-This application is developed against the open source CalDav server Baïkal (https://github.com/jeromeschneider/Baikal/)
-which uses the popular sabre/dav library (http://sabre.io/dav/caldav/).
+This application is developed against the open source CalDav server [Baïkal](https://github.com/jeromeschneider/Baikal/)
+which uses the popular [sabre/dav library](http://sabre.io/dav/caldav/).
 As far as i know ownCloud is also based on sabre/dav, so this application should be 
 compatible to the ownCloud CalDAV server, too.
 
